@@ -17,7 +17,7 @@
                 <Label x:Name="energyLabel" Content="Energy"/>
                 <Label x:Name="correlationLabel" Content="Correlation"/>
                 <Label x:Name="invDiffMomentLabel" Content="Inv Diff Moment"/>
-                <Label x:Name="interia" Content="Interia"/>
+                <Label x:Name="contrast" Content="Contrast"/>
             </StackPanel>
         </GroupBox>
         <GroupBox x:Name="groupBox1" Header="Options" HorizontalAlignment="Left" Margin="322,346,0,0" VerticalAlignment="Top" Height="151" Width="304">

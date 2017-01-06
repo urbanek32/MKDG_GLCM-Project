@@ -96,7 +96,7 @@ namespace GLCM_Magic
             energyLabel.Content = string.Format("Energy: {0}", haralick.AngularSecondMomentum.ToString("N5"));
             correlationLabel.Content = string.Format("Correlation: {0}", haralick.Correlation.ToString("N"));
             invDiffMomentLabel.Content = string.Format("Inv Diff Moment: {0}", haralick.InverseDifferenceMoment.ToString("N"));
-            interia.Content = string.Format("Interia: {0}", "kek");
+            contrast.Content = string.Format("Contrast: {0}", haralick.Contrast.ToString("N"));
         }
     }
 }
