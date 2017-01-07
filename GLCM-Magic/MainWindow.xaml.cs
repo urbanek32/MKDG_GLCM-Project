@@ -35,6 +35,7 @@ namespace GLCM_Magic
         private int CropPointY { get; set; }
         private int CropLineX { get; set; }
         private int CropLineY { get; set; }
+        private string[] ColorNames = { "White", "Green", "GreenYellow", "Yellow", "Orange", "OrangeRed", "Red", "DarkRed" };
         /*private WriteableBitmap writeableBitmap;
         private Int32Rect rect;
         private int stride;
@@ -43,7 +44,6 @@ namespace GLCM_Magic
         public MainWindow()
         {
             InitializeComponent();
-
             /*writeableBitmap = new WriteableBitmap(256, 256, 96, 96, PixelFormats.Bgra32, null);
             rect = new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight);
             bytesPerPixel = (writeableBitmap.Format.BitsPerPixel + 7)/8;
@@ -79,7 +79,7 @@ namespace GLCM_Magic
                 return;
             }
 
-            CalulateGLCM(true);
+            generateHeatMap(CalulateGLCM(true));
         }
 
         public Bitmap CropImage(Bitmap source, Rectangle section)
@@ -120,6 +120,24 @@ namespace GLCM_Magic
             }
         }
 
+        private void generateHeatMap(double[,] glcmArray)
+        {
+            var heatMap = new Bitmap(256, 256);
+            IEnumerable<double> allValues = glcmArray.Cast<double>();
+            int max = Convert.ToInt32(allValues.Max());
+            int pivot = max / (ColorNames.Length - 1);
+            for (int i = 0; i < glcmArray.GetLength(0); i++)
+            {
+                for (int j = 0; j < glcmArray.GetLength(1); j++)
+                {   
+                    int x = Convert.ToInt32(glcmArray[i,j] / pivot);
+                    string colorName = ColorNames[x];
+                    heatMap.SetPixel(i, j, System.Drawing.Color.FromName(colorName));
+                }
+            }
+            heatMapImage.Source = BitmapToImageSource(heatMap);
+        }
+
         private double[,] CalulateGLCM(bool mainCalculation)
         {
             var image = prepareBitmap(mainCalculation);
@@ -150,6 +168,11 @@ namespace GLCM_Magic
                 if(excelCheckBox.IsChecked.Value == true)
                 showResultsInExcel(results);
             }
+            if (glcm.Normalize)
+            { //because for heatMap we need non-normalized array
+                glcm.Normalize = false;
+                results = glcm.Compute(unmanagedImage);
+            }
             return results;
         }
 
@@ -167,7 +190,7 @@ namespace GLCM_Magic
                 oWB = (Excel._Workbook)(oXL.Workbooks.Add(Missing.Value));
                 oSheet = (Excel._Worksheet)oWB.ActiveSheet;
 
-                for (int i = 1; i < results.GetLength(0); i++)
+                for (int i = 1; i < results.GetLength(0)+1; i++)
                 {
                     oSheet.Cells[1, i] = i;
                     oSheet.Cells[i, 1] = i;
@@ -190,9 +213,9 @@ namespace GLCM_Magic
                     }
                 }
 
-                oSheet.get_Range("A2", "IV256").Value2 = excelValues;
+                oSheet.get_Range("B2", "IV256").Value2 = excelValues;
 
-                oRng = oSheet.get_Range("A2", "IV256");
+                oRng = oSheet.get_Range("B2", "IV256");
                 oRng.EntireColumn.AutoFit();
 
                 oXL.Visible = true;
@@ -218,6 +241,7 @@ namespace GLCM_Magic
             CropLineY = Int32.Parse(CropLenYText.Text);
 
             var matrix = CalulateGLCM(false);
+            generateHeatMap(matrix);
         }
     }
 }

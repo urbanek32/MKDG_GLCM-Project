@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GLCM_Magic"
         mc:Ignorable="d"
-        Title="GLCM-Magic" Height="537.535" Width="646.347">
+        Title="GLCM-Magic" Height="537.535" Width="952.647">
     <Grid Margin="0,0,2,0">
-        <Button x:Name="loadButton" Content="Load image" HorizontalAlignment="Left" Margin="10,231,0,0" VerticalAlignment="Top" Width="75" Click="loadButton_Click"/>
+        <Button x:Name="loadButton" Content="Load image" HorizontalAlignment="Left" Margin="8,270,0,0" VerticalAlignment="Top" Width="75" Click="loadButton_Click"/>
         <Image x:Name="imageSource" HorizontalAlignment="Left" Height="216" Margin="10,10,0,0" VerticalAlignment="Top" Width="307" ToolTip="Source Image"/>
-        <Button x:Name="startButton" Content="Start" HorizontalAlignment="Left" Margin="242,231,0,0" VerticalAlignment="Top" Width="75" Click="startButton_Click" IsEnabled="False"/>
-        <Image x:Name="imageResult" HorizontalAlignment="Left" Height="216" Margin="322,10,0,0" VerticalAlignment="Top" Width="304" ToolTip="Result Image"/>
+        <Button x:Name="startButton" Content="Start" HorizontalAlignment="Left" Margin="213,270,0,0" VerticalAlignment="Top" Width="75" Click="startButton_Click" IsEnabled="False" RenderTransformOrigin="-0.173,0.5"/>
+        <Image x:Name="imageResult" HorizontalAlignment="Left" Height="216" Margin="583,7,0,0" VerticalAlignment="Top" Width="304" ToolTip="Result Image"/>
         <GroupBox x:Name="groupBox" Header="Values" HorizontalAlignment="Left" Margin="10,346,0,0" VerticalAlignment="Top" Height="151" Width="291">
             <StackPanel Margin="10,0,-2,-1">
                 <Label x:Name="entropyLabel" Content="Entropy"/>
@@ -35,14 +35,15 @@
                 <CheckBox x:Name="excelCheckBox" Content="Excel" HorizontalAlignment="Left" Margin="124,57,0,0" VerticalAlignment="Top" IsChecked="True"/>
             </Grid>
         </GroupBox>
-        <Button x:Name="croppButton" Content="Cropp" HorizontalAlignment="Left" Margin="322,231,0,0" VerticalAlignment="Top" Width="75" Click="CroppImage" IsEnabled="False"/>
-        <Label Content="X" HorizontalAlignment="Left" Margin="397,228,0,0" VerticalAlignment="Top"/>
-        <Label Content="Y" HorizontalAlignment="Left" Margin="439,228,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
-        <TextBox x:Name="CropPointXText" HorizontalAlignment="Left" Height="23" Margin="414,231,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="25"/>
-        <TextBox x:Name="CropPointYText" HorizontalAlignment="Left" Height="23" Margin="456,231,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="25"/>
-        <Label Content="Xl" HorizontalAlignment="Left" Margin="501,228,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
-        <Label Content="Yl" HorizontalAlignment="Left" Margin="560,228,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
-        <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="577,231,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="39"/>
-        <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="518,231,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="37" RenderTransformOrigin="0.838,0.435"/>
+        <Button x:Name="croppButton" Content="Cropp" HorizontalAlignment="Left" Margin="293,270,0,0" VerticalAlignment="Top" Width="75" Click="CroppImage" IsEnabled="False"/>
+        <Label Content="X" HorizontalAlignment="Left" Margin="373,267,0,0" VerticalAlignment="Top"/>
+        <Label Content="Y" HorizontalAlignment="Left" Margin="442,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
+        <TextBox x:Name="CropPointXText" HorizontalAlignment="Left" Height="23" Margin="395,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="42"/>
+        <TextBox x:Name="CropPointYText" HorizontalAlignment="Left" Height="23" Margin="459,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="35" RenderTransformOrigin="1.4,0.478"/>
+        <Label Content="Xl" HorizontalAlignment="Left" Margin="499,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
+        <Label Content="Yl" HorizontalAlignment="Left" Margin="558,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
+        <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="575,270,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="39"/>
+        <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="516,270,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="37" RenderTransformOrigin="0.838,0.435"/>
+        <Image x:Name="heatMapImage" HorizontalAlignment="Left" Height="256" Margin="322,7,0,0" VerticalAlignment="Top" Width="256" ToolTip="Result Image"/>
     </Grid>
 </Window>
