@@ -19,6 +19,9 @@ using Accord.Statistics;
 using Microsoft.Win32;
 using Excel=Microsoft.Office.Interop.Excel;
 using System.Reflection;
+using Rectangle = System.Drawing.Rectangle;
+using Point = System.Drawing.Point;
+using System.IO;
 
 namespace GLCM_Magic
 {
@@ -28,7 +31,10 @@ namespace GLCM_Magic
     public partial class MainWindow : Window
     {
         private string ImagePath { get; set; }
-
+        private int CropPointX { get; set; }
+        private int CropPointY { get; set; }
+        private int CropLineX { get; set; }
+        private int CropLineY { get; set; }
         /*private WriteableBitmap writeableBitmap;
         private Int32Rect rect;
         private int stride;
@@ -60,6 +66,7 @@ namespace GLCM_Magic
                 if (!string.IsNullOrWhiteSpace(ImagePath))
                 {
                     startButton.IsEnabled = true;
+                    croppButton.IsEnabled = true;
                 }
             }
         }
@@ -72,12 +79,50 @@ namespace GLCM_Magic
                 return;
             }
 
-            CalulateGLCM();
+            CalulateGLCM(true);
         }
 
-        private void CalulateGLCM()
+        public Bitmap CropImage(Bitmap source, Rectangle section)
+        {   
+            Bitmap bmp = new Bitmap(section.Width, section.Height);
+            Graphics g = Graphics.FromImage(bmp);
+            g.DrawImage(source, 0, 0, section, GraphicsUnit.Pixel);
+            return bmp;
+        }
+
+        private BitmapImage BitmapToImageSource(Bitmap bitmap)
         {
-            var image = new Bitmap(ImagePath);
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+
+                return bitmapimage;
+            }
+        }
+
+        private Bitmap prepareBitmap(bool mainCalculation) {
+            if (mainCalculation)
+                return new Bitmap(ImagePath);
+            else
+            {
+                Bitmap source = new Bitmap(ImagePath);
+                Rectangle section = new Rectangle(new System.Drawing.Point(CropPointX, CropPointY), new System.Drawing.Size(CropLineX, CropLineY));
+                
+                Bitmap CroppedImage = CropImage(source, section);
+                imageResult.Source = BitmapToImageSource(CroppedImage);
+                return CroppedImage;
+            }
+        }
+
+        private double[,] CalulateGLCM(bool mainCalculation)
+        {
+            var image = prepareBitmap(mainCalculation);
             var unmanagedImage = UnmanagedImage.FromManagedImage(image);
 
             var glcm = new GrayLevelCooccurrenceMatrix
@@ -105,6 +150,7 @@ namespace GLCM_Magic
                 if(excelCheckBox.IsChecked.Value == true)
                 showResultsInExcel(results);
             }
+            return results;
         }
 
         private void showResultsInExcel(double[,] results)
@@ -161,6 +207,17 @@ namespace GLCM_Magic
                 errorMessage = String.Concat(errorMessage, theException.Source);
                 MessageBox.Show(errorMessage, "Error");
             }
+        }
+
+        private void CroppImage(object sender, RoutedEventArgs e)
+        {
+            CropPointX = Int32.Parse(CropPointXText.Text);
+            CropPointY = Int32.Parse(CropPointYText.Text);
+
+            CropLineX = Int32.Parse(CropLenXText.Text);
+            CropLineY = Int32.Parse(CropLenYText.Text);
+
+            var matrix = CalulateGLCM(false);
         }
     }
 }
