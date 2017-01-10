@@ -30,24 +30,20 @@ namespace GLCM_Magic
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string ImagePath { get; set; }
-        private int CropPointX { get; set; }
-        private int CropPointY { get; set; }
-        private int CropLineX { get; set; }
-        private int CropLineY { get; set; }
-        private string[] ColorNames = { "White", "Green", "GreenYellow", "Yellow", "Orange", "OrangeRed", "Red", "DarkRed" };
-        /*private WriteableBitmap writeableBitmap;
-        private Int32Rect rect;
-        private int stride;
-        private int bytesPerPixel;*/
+        private string imagePath { get; set; }
+        private int cropPointX { get; set; }
+        private int cropPointY { get; set; }
+        private int cropLineX { get; set; }
+        private int cropLineY { get; set; }
+        private string[] colorNames = { "White", "Green", "GreenYellow", "Yellow", "Orange", "OrangeRed", "Red", "DarkRed" };
+        private string degree { get; set; }
+        private int distance { get; set; }
+        private bool normalize { get; set; }
+        private bool excel { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            /*writeableBitmap = new WriteableBitmap(256, 256, 96, 96, PixelFormats.Bgra32, null);
-            rect = new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight);
-            bytesPerPixel = (writeableBitmap.Format.BitsPerPixel + 7)/8;
-            stride = writeableBitmap.PixelWidth*bytesPerPixel;*/
         }
 
         private void loadButton_Click(object sender, RoutedEventArgs e)
@@ -62,8 +58,8 @@ namespace GLCM_Magic
             if (op.ShowDialog() == true)
             {
                 imageSource.Source = new BitmapImage(new Uri(op.FileName));
-                ImagePath = op.FileName;
-                if (!string.IsNullOrWhiteSpace(ImagePath))
+                imagePath = op.FileName;
+                if (!string.IsNullOrWhiteSpace(imagePath))
                 {
                     startButton.IsEnabled = true;
                     croppButton.IsEnabled = true;
@@ -71,15 +67,38 @@ namespace GLCM_Magic
             }
         }
 
+        private void readInputParameters()
+        {
+            bool _normalize = false;
+            bool _excel = false;
+            var comboBoxItem = degreeComboBox.SelectedItem as ComboBoxItem;
+            this.degree = (string)comboBoxItem.Tag;
+            if (normalizeCheckBox.IsChecked != null)
+                _normalize = normalizeCheckBox.IsChecked.Value;
+            this.normalize = _normalize;
+            if (excelCheckBox.IsChecked != null)
+                _excel = excelCheckBox.IsChecked.Value;
+            this.excel = _excel;
+            this.distance = int.Parse(distanceTextBox.Text);
+            this.cropPointX = Int32.Parse(CropPointXText.Text);
+            this.cropPointY = Int32.Parse(CropPointYText.Text);
+            this.cropLineX = Int32.Parse(CropLenXText.Text);
+            this.cropLineY = Int32.Parse(CropLenYText.Text);
+        }
+
         private void startButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(ImagePath))
+            if (string.IsNullOrWhiteSpace(imagePath))
             {
                 Debug.WriteLine("ImagePath is empty");
                 return;
             }
-
-            generateHeatMap(CalulateGLCM(true));
+            
+            if (normalizeCheckBox.IsChecked != null) 
+                normalize = normalizeCheckBox.IsChecked.Value;
+            readInputParameters();
+            CalulateGLCM(true, this.normalize, this.degree, this.distance, true, this.excel);
+            generateHeatMap(CalulateGLCM(true, false, this.degree, this.distance, false, false));
         }
 
         public Bitmap CropImage(Bitmap source, Rectangle section)
@@ -106,13 +125,14 @@ namespace GLCM_Magic
             }
         }
 
-        private Bitmap prepareBitmap(bool mainCalculation) {
-            if (mainCalculation)
-                return new Bitmap(ImagePath);
+        private Bitmap prepareBitmap(bool fullBitmap)
+        {
+            if (fullBitmap)
+                return new Bitmap(imagePath);
             else
             {
-                Bitmap source = new Bitmap(ImagePath);
-                Rectangle section = new Rectangle(new System.Drawing.Point(CropPointX, CropPointY), new System.Drawing.Size(CropLineX, CropLineY));
+                Bitmap source = new Bitmap(imagePath);
+                Rectangle section = new Rectangle(new System.Drawing.Point(cropPointX, cropPointY), new System.Drawing.Size(cropLineX, cropLineY));
                 
                 Bitmap CroppedImage = CropImage(source, section);
                 imageResult.Source = BitmapToImageSource(CroppedImage);
@@ -125,54 +145,46 @@ namespace GLCM_Magic
             var heatMap = new Bitmap(256, 256);
             IEnumerable<double> allValues = glcmArray.Cast<double>();
             int max = Convert.ToInt32(allValues.Max());
-            int pivot = max / (ColorNames.Length - 1);
+            int pivot = max / (colorNames.Length - 1);
             for (int i = 0; i < glcmArray.GetLength(0); i++)
             {
                 for (int j = 0; j < glcmArray.GetLength(1); j++)
                 {   
                     int x = Convert.ToInt32(glcmArray[i,j] / pivot);
-                    string colorName = ColorNames[x];
+                    string colorName = colorNames[x];
                     heatMap.SetPixel(i, j, System.Drawing.Color.FromName(colorName));
                 }
             }
             heatMapImage.Source = BitmapToImageSource(heatMap);
         }
 
-        private double[,] CalulateGLCM(bool mainCalculation)
+        private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool excel)
         {
-            var image = prepareBitmap(mainCalculation);
+            var image = prepareBitmap(fullBitmap);
             var unmanagedImage = UnmanagedImage.FromManagedImage(image);
 
             var glcm = new GrayLevelCooccurrenceMatrix
             {
-                AutoGray = false
+                AutoGray = false,
+                Normalize = normalize,
+                Distance = distance,
+                Degree = (CooccurrenceDegree)Enum.Parse(typeof(CooccurrenceDegree), degree)
             };
 
-            if (normalizeCheckBox.IsChecked != null) glcm.Normalize = normalizeCheckBox.IsChecked.Value;
-            var comboBoxItem = degreeComboBox.SelectedItem as ComboBoxItem;
-            if (comboBoxItem != null)
-                glcm.Degree = (CooccurrenceDegree)Enum.Parse(typeof(CooccurrenceDegree), (string)comboBoxItem.Tag);
-            glcm.Distance = int.Parse(distanceTextBox.Text);
-
             var results = glcm.Compute(unmanagedImage);
-            var haralick = new HaralickDescriptor(results);
 
-            entropyLabel.Content = string.Format("Entropy: {0}", haralick.Entropy.ToString("N"));
-            energyLabel.Content = string.Format("Energy: {0}", haralick.AngularSecondMomentum.ToString("N5"));
-            correlationLabel.Content = string.Format("Correlation: {0}", haralick.Correlation.ToString("N"));
-            invDiffMomentLabel.Content = string.Format("Inv Diff Moment: {0}", haralick.InverseDifferenceMoment.ToString("N"));
-            contrast.Content = string.Format("Contrast: {0}", haralick.Contrast.ToString("N"));
-
-            if (excelCheckBox.IsChecked != null)
+            if (updateMetrics)
             {
-                if(excelCheckBox.IsChecked.Value == true)
+                var haralick = new HaralickDescriptor(results);
+                entropyLabel.Content = string.Format("Entropy: {0}", haralick.Entropy.ToString("N"));
+                energyLabel.Content = string.Format("Energy: {0}", haralick.AngularSecondMomentum.ToString("N5"));
+                correlationLabel.Content = string.Format("Correlation: {0}", haralick.Correlation.ToString("N"));
+                invDiffMomentLabel.Content = string.Format("Inv Diff Moment: {0}", haralick.InverseDifferenceMoment.ToString("N"));
+                contrast.Content = string.Format("Contrast: {0}", haralick.Contrast.ToString("N"));
+            }
+
+            if (excel)
                 showResultsInExcel(results);
-            }
-            if (glcm.Normalize)
-            { //because for heatMap we need non-normalized array
-                glcm.Normalize = false;
-                results = glcm.Compute(unmanagedImage);
-            }
             return results;
         }
 
@@ -234,14 +246,10 @@ namespace GLCM_Magic
 
         private void CroppImage(object sender, RoutedEventArgs e)
         {
-            CropPointX = Int32.Parse(CropPointXText.Text);
-            CropPointY = Int32.Parse(CropPointYText.Text);
+            
 
-            CropLineX = Int32.Parse(CropLenXText.Text);
-            CropLineY = Int32.Parse(CropLenYText.Text);
-
-            var matrix = CalulateGLCM(false);
-            generateHeatMap(matrix);
+            //var matrix = CalulateGLCM(false);
+            //generateHeatMap(matrix);
         }
     }
 }
