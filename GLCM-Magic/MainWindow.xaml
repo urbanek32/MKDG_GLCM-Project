@@ -5,12 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GLCM_Magic"
         mc:Ignorable="d"
-        Title="GLCM-Magic" Height="537.535" Width="952.647">
+        Title="GLCM-Magic" Height="551.535" Width="1119.647">
     <Grid Margin="0,0,2,0">
         <Button x:Name="loadButton" Content="Load image" HorizontalAlignment="Left" Margin="8,270,0,0" VerticalAlignment="Top" Width="75" Click="loadButton_Click"/>
-        <Image x:Name="imageSource" HorizontalAlignment="Left" Height="216" Margin="10,10,0,0" VerticalAlignment="Top" Width="307" ToolTip="Source Image"/>
+        <Image x:Name="imageSource" HorizontalAlignment="Left" Height="255" Margin="10,10,0,0" VerticalAlignment="Top" Width="358" ToolTip="Source Image"/>
         <Button x:Name="startButton" Content="Start" HorizontalAlignment="Left" Margin="213,270,0,0" VerticalAlignment="Top" Width="75" Click="startButton_Click" IsEnabled="False" RenderTransformOrigin="-0.173,0.5"/>
-        <Image x:Name="imageResult" HorizontalAlignment="Left" Height="216" Margin="583,7,0,0" VerticalAlignment="Top" Width="304" ToolTip="Result Image"/>
         <GroupBox x:Name="groupBox" Header="Values" HorizontalAlignment="Left" Margin="10,346,0,0" VerticalAlignment="Top" Height="151" Width="291">
             <StackPanel Margin="10,0,-2,-1">
                 <Label x:Name="entropyLabel" Content="Entropy"/>
@@ -40,10 +39,26 @@
         <Label Content="Y" HorizontalAlignment="Left" Margin="442,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
         <TextBox x:Name="CropPointXText" HorizontalAlignment="Left" Height="23" Margin="395,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="42"/>
         <TextBox x:Name="CropPointYText" HorizontalAlignment="Left" Height="23" Margin="459,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="35" RenderTransformOrigin="1.4,0.478"/>
-        <Label Content="Xl" HorizontalAlignment="Left" Margin="499,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
-        <Label Content="Yl" HorizontalAlignment="Left" Margin="558,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
-        <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="575,270,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="39"/>
-        <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="516,270,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="37" RenderTransformOrigin="0.838,0.435"/>
-        <Image x:Name="heatMapImage" HorizontalAlignment="Left" Height="256" Margin="322,7,0,0" VerticalAlignment="Top" Width="256" ToolTip="Result Image"/>
+        <Label Content="Step X" HorizontalAlignment="Left" Margin="373,299,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
+        <Label Content="Step Y" HorizontalAlignment="Left" Margin="459,298,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
+        <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="502,303,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="39"/>
+        <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="417,302,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="37" RenderTransformOrigin="0.838,0.435"/>
+        <ScrollViewer HorizontalAlignment="Left" Height="487" Margin="631,10,0,0" VerticalAlignment="Top" Width="469">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Entropy Heatmap" VerticalAlignment="Center" Width="94"/>
+                    <Image x:Name="imageResult" ToolTip="Result Image" VerticalAlignment="Top" Height="256" Width="256" Stretch="Fill"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Energy Heatmap" VerticalAlignment="Center"/>
+                    <Image x:Name="heatMapImage" ToolTip="Result Image" VerticalAlignment="Top" Height="256" Width="256" Stretch="Fill"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Correlation Heatmap" VerticalAlignment="Center"/>
+                    <Image x:Name="correlationHeatmapImage" ToolTip="Result Image" VerticalAlignment="Top" Height="256" Width="256" Stretch="Fill"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Button x:Name="generateHeatmapsButton" Content="Start generating heatmaps" HorizontalAlignment="Left" Margin="213,295,0,0" VerticalAlignment="Top" Width="155" Click="generateHeatmapsButton_Click" IsEnabled="False"/>
     </Grid>
 </Window>
