@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -22,6 +23,8 @@ using System.Reflection;
 using Rectangle = System.Drawing.Rectangle;
 using Point = System.Drawing.Point;
 using System.IO;
+using System.Threading;
+using System.Windows.Threading;
 using Pen = System.Drawing.Pen;
 
 namespace GLCM_Magic
@@ -31,7 +34,9 @@ namespace GLCM_Magic
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string ImagePath { get; set; }
+        private string SourceImagePath { get; set; }
+        private double SourceImageWidth { get; set; }
+        private double SourceImageHeight { get; set; }
         private int CropLineX { get; set; }
         private int CropLineY { get; set; }
         private readonly System.Drawing.Brush[] colorBrushes = {
@@ -47,7 +52,10 @@ namespace GLCM_Magic
         private string Degree { get; set; }
         private int Distance { get; set; }
         private bool Normalize { get; set; }
-        private bool excel { get; set; }
+        private bool ExportToExcel { get; set; }
+
+        private readonly BackgroundWorker _glcmBackgroundWorker;
+        private readonly BackgroundWorker _heatmapsBackgroundWorker;
 
         /// <summary>
         /// Tuple (x, y, width, height)
@@ -59,6 +67,22 @@ namespace GLCM_Magic
         public MainWindow()
         {
             InitializeComponent();
+
+            _glcmBackgroundWorker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
+            _glcmBackgroundWorker.DoWork += OnGlcmBackgroundDoWork;
+            _glcmBackgroundWorker.ProgressChanged += OnGlcmBackgroundProgressChanged;
+            _glcmBackgroundWorker.RunWorkerCompleted += OnGlcmBackgroundWorkerCompleted;
+
+            _heatmapsBackgroundWorker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
+            _heatmapsBackgroundWorker.DoWork += OnHeatmapsBackgroundDoWork;
+            _heatmapsBackgroundWorker.ProgressChanged += OnGlcmBackgroundProgressChanged;
+            _heatmapsBackgroundWorker.RunWorkerCompleted += OnHeatmapsBackgroundWorkerCompleted;
         }
 
         private void loadButton_Click(object sender, RoutedEventArgs e)
@@ -73,10 +97,13 @@ namespace GLCM_Magic
             if (op.ShowDialog() == true)
             {
                 imageSource.Source = new BitmapImage(new Uri(op.FileName));
-                ImagePath = op.FileName;
-                if (!string.IsNullOrWhiteSpace(ImagePath))
+                SourceImagePath = op.FileName;
+                SourceImageHeight = imageSource.Source.Height;
+                SourceImageWidth = imageSource.Source.Width;
+                if (!string.IsNullOrWhiteSpace(SourceImagePath))
                 {
                     GenerateHeatmapsButton.IsEnabled = true;
+                    StatusTextBlock.Text = "Ready to start";
                 }
             }
         }
@@ -84,13 +111,13 @@ namespace GLCM_Magic
         private void ReadInputParameters()
         {
             this.Normalize = false;
-            this.excel = false;
+            this.ExportToExcel = false;
             var comboBoxItem = degreeComboBox.SelectedItem as ComboBoxItem;
             this.Degree = (string)comboBoxItem.Tag;
             if (normalizeCheckBox.IsChecked.HasValue)
                 Normalize = normalizeCheckBox.IsChecked.Value;
             if (excelCheckBox.IsChecked.HasValue)
-                excel = excelCheckBox.IsChecked.Value;
+                ExportToExcel = excelCheckBox.IsChecked.Value;
             this.Distance = int.Parse(distanceTextBox.Text);
             this.CropLineX = int.Parse(CropLenXText.Text);
             this.CropLineY = int.Parse(CropLenYText.Text);
@@ -128,7 +155,7 @@ namespace GLCM_Magic
             }
         }
 
-        /*private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool excel)
+        /*private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool ExportToExcel)
         {
             var image = PrepareBitmap(fullBitmap);
             var unmanagedImage = UnmanagedImage.FromManagedImage(image);
@@ -153,7 +180,7 @@ namespace GLCM_Magic
                 contrast.Content = string.Format("Contrast: {0}", haralick.Contrast.ToString("N"));
             }
 
-            if (excel)
+            if (ExportToExcel)
                 showResultsInExcel(results);
             return results;
         }*/
@@ -217,20 +244,50 @@ namespace GLCM_Magic
         private void generateHeatmapsButton_Click(object sender, RoutedEventArgs e)
         {
             ReadInputParameters();
-            CalculateValuesForEachPartialBitmap();
-            GenerateHeatmap(EntropyValues, EntropyImageResult);
-            GenerateHeatmap(EnergyValues, EnergyImageResult);
-            GenerateHeatmap(CorrelationValues, CorrelationImageResult);
+            GenerateHeatmapsButton.IsEnabled = false;
+            StatusTextBlock.Text = "Calculating GLCM matrix...";
+            _glcmBackgroundWorker.RunWorkerAsync();
         }
 
-        private void CalculateValuesForEachPartialBitmap()
+        private void GenerateHeatmap(Dictionary<Tuple<int, int, int, int>, double> dict, System.Windows.Controls.Image imageControl)
         {
-            using (var absentRectangleImage = (Bitmap)Bitmap.FromFile(ImagePath))
+            var heatMap = new Bitmap((int)SourceImageWidth, (int)SourceImageHeight);
+
+            var entropyValues = dict.Values.Cast<double>();
+            var maxValue = entropyValues.Max();
+            var pivot = maxValue / (colorBrushes.Length - 1);
+
+            using (var gr = Graphics.FromImage(heatMap))
+            {
+                foreach (var entropyValue in dict)
+                {
+                    var brushIndex = Convert.ToInt32(entropyValue.Value / pivot);
+                    gr.FillRectangle(colorBrushes[brushIndex], entropyValue.Key.Item1, entropyValue.Key.Item2, entropyValue.Key.Item3, entropyValue.Key.Item4);
+                }
+            }
+
+            InvokeAction(() =>
+            {
+                imageControl.Source = BitmapToImageSource(heatMap);
+            });
+        }
+
+        private void OnGlcmBackgroundDoWork(object sender, DoWorkEventArgs e)
+        {
+            /*Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            {
+                GenerateHeatmapsButton.IsEnabled = false;
+            }));*/
+
+            using (var absentRectangleImage = (Bitmap)Bitmap.FromFile(SourceImagePath))
             {
                 var imgWidth = absentRectangleImage.Width;
                 var imgHeight = absentRectangleImage.Height;
                 var stepX = CropLineX;
                 var stepY = CropLineY;
+
+                var iterations = Math.Ceiling((float)imgWidth / stepX) * Math.Ceiling((float)imgHeight / stepY);
+                var iterationCounter = 1;
 
                 EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
                 EnergyValues = new Dictionary<Tuple<int, int, int, int>, double>();
@@ -269,31 +326,96 @@ namespace GLCM_Magic
                             EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
                             CorrelationValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Correlation);
                         }
+                        
+                        _glcmBackgroundWorker.ReportProgress((int)(100 / (iterations) * iterationCounter++));
                     }
                 }
             }
         }
 
-        private void GenerateHeatmap(Dictionary<Tuple<int, int, int, int>, double> dict, System.Windows.Controls.Image imageControl)
+        private void OnGlcmBackgroundProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            var imgWidth = (int)imageSource.Source.Width;
-            var imgHeight = (int)imageSource.Source.Height;
-            var heatMap = new Bitmap(imgWidth, imgHeight);
+            // BGW facilitates dealing with UI-owned objects by executing this handler on the main thread.
+            ProgressBar.Value = e.ProgressPercentage;
+        }
 
-            var entropyValues = dict.Values.Cast<double>();
-            var maxValue = entropyValues.Max();
-            var pivot = maxValue / (colorBrushes.Length - 1);
-
-            using (var gr = Graphics.FromImage(heatMap))
+        private void OnGlcmBackgroundWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Cancelled)
             {
-                foreach (var entropyValue in dict)
-                {
-                    var brushIndex = Convert.ToInt32(entropyValue.Value / pivot);
-                    gr.FillRectangle(colorBrushes[brushIndex], entropyValue.Key.Item1, entropyValue.Key.Item2, entropyValue.Key.Item3, entropyValue.Key.Item4);
-                }
+                MessageBox.Show("BackgroundWorker was cancelled.", "Operation Cancelled", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+            else if (e.Error != null)
+            {
+                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                _heatmapsBackgroundWorker.RunWorkerAsync();
+                return;
             }
 
-            imageControl.Source = BitmapToImageSource(heatMap);
+            ResetBackgroundWorker();
+        }
+
+        private void OnHeatmapsBackgroundDoWork(object sender, DoWorkEventArgs e)
+        {
+            InvokeAction(() =>
+            {
+                StatusTextBlock.Text = "Generating Entropy heatmap...";
+            });
+            GenerateHeatmap(EntropyValues, EntropyImageResult);
+            _heatmapsBackgroundWorker.ReportProgress(33);
+
+            InvokeAction(() =>
+            {
+                StatusTextBlock.Text = "Generating Energy heatmap...";
+            });
+            GenerateHeatmap(EnergyValues, EnergyImageResult);
+            _heatmapsBackgroundWorker.ReportProgress(66);
+
+            InvokeAction(() =>
+            {
+                StatusTextBlock.Text = "Generating Correlation heatmap...";
+            });
+            GenerateHeatmap(CorrelationValues, CorrelationImageResult);
+            _heatmapsBackgroundWorker.ReportProgress(100);
+        }
+
+        private void InvokeAction(Action action)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                action.Invoke();
+            }
+            else
+            {
+                Dispatcher.Invoke(DispatcherPriority.Background, action);
+            }
+        }
+
+        private void OnHeatmapsBackgroundWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Cancelled)
+            {
+                MessageBox.Show("BackgroundWorker was cancelled.", "Operation Cancelled", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+            else if (e.Error != null)
+            {
+                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                StatusTextBlock.Text = "Heatmaps are ready";
+            }
+
+            ResetBackgroundWorker();
+        }
+
+        private void ResetBackgroundWorker()
+        {
+            ProgressBar.Value = 0;
+            GenerateHeatmapsButton.IsEnabled = true;
         }
     }
 }

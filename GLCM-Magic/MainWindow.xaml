@@ -65,6 +65,9 @@
                 <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="59,45,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="39"/>
             </Grid>
         </GroupBox>
-        <ProgressBar x:Name="ProgressBar" HorizontalAlignment="Left" Height="26" Margin="387,180,0,0" VerticalAlignment="Top" Width="239"/>
+        <ProgressBar x:Name="ProgressBar" HorizontalAlignment="Left" Height="34" Margin="387,180,0,0" VerticalAlignment="Top" Width="239"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="46" Margin="387,239,0,0" VerticalAlignment="Top" Width="239">
+            <TextBlock x:Name="StatusTextBlock" Margin="9" TextWrapping="Wrap" Text="Please load image" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
+        </Border>
     </Grid>
 </Window>
