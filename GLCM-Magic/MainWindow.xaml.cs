@@ -31,13 +31,12 @@ namespace GLCM_Magic
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string imagePath { get; set; }
-        private int cropPointX { get; set; }
-        private int cropPointY { get; set; }
-        private int cropLineX { get; set; }
-        private int cropLineY { get; set; }
-        private string[] colorNames = { "White", "Green", "GreenYellow", "Yellow", "Orange", "OrangeRed", "Red", "DarkRed" };
-        private System.Drawing.Brush[] colorBrushes = {
+        private string ImagePath { get; set; }
+        private int CropPointX { get; set; }
+        private int CropPointY { get; set; }
+        private int CropLineX { get; set; }
+        private int CropLineY { get; set; }
+        private readonly System.Drawing.Brush[] colorBrushes = {
             System.Drawing.Brushes.White,
             System.Drawing.Brushes.Green,
             System.Drawing.Brushes.GreenYellow,
@@ -47,9 +46,9 @@ namespace GLCM_Magic
             System.Drawing.Brushes.Red,
             System.Drawing.Brushes.DarkRed
         };
-        private string degree { get; set; }
-        private int distance { get; set; }
-        private bool normalize { get; set; }
+        private string Degree { get; set; }
+        private int Distance { get; set; }
+        private bool Normalize { get; set; }
         private bool excel { get; set; }
 
         /// <summary>
@@ -74,54 +73,45 @@ namespace GLCM_Magic
             if (op.ShowDialog() == true)
             {
                 imageSource.Source = new BitmapImage(new Uri(op.FileName));
-                imagePath = op.FileName;
-                if (!string.IsNullOrWhiteSpace(imagePath))
+                ImagePath = op.FileName;
+                if (!string.IsNullOrWhiteSpace(ImagePath))
                 {
                     startButton.IsEnabled = true;
                     generateHeatmapsButton.IsEnabled = true;
-                    croppButton.IsEnabled = true;
                 }
             }
         }
 
         private void ReadInputParameters()
         {
-            this.normalize = false;
+            this.Normalize = false;
             this.excel = false;
             var comboBoxItem = degreeComboBox.SelectedItem as ComboBoxItem;
-            this.degree = (string)comboBoxItem.Tag;
+            this.Degree = (string)comboBoxItem.Tag;
             if (normalizeCheckBox.IsChecked.HasValue)
-                normalize = normalizeCheckBox.IsChecked.Value;
+                Normalize = normalizeCheckBox.IsChecked.Value;
             if (excelCheckBox.IsChecked.HasValue)
                 excel = excelCheckBox.IsChecked.Value;
-            this.distance = int.Parse(distanceTextBox.Text);
-            this.cropPointX = int.Parse(CropPointXText.Text);
-            this.cropPointY = int.Parse(CropPointYText.Text);
-            this.cropLineX = int.Parse(CropLenXText.Text);
-            this.cropLineY = int.Parse(CropLenYText.Text);
+            this.Distance = int.Parse(distanceTextBox.Text);
+            //this.CropPointX = int.Parse(CropPointXText.Text);
+            //this.CropPointY = int.Parse(CropPointYText.Text);
+            this.CropLineX = int.Parse(CropLenXText.Text);
+            this.CropLineY = int.Parse(CropLenYText.Text);
         }
 
         private void startButton_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(imagePath))
+            if (string.IsNullOrWhiteSpace(ImagePath))
             {
                 Debug.WriteLine("ImagePath is empty");
                 return;
             }
             
             if (normalizeCheckBox.IsChecked != null) 
-                normalize = normalizeCheckBox.IsChecked.Value;
+                Normalize = normalizeCheckBox.IsChecked.Value;
             ReadInputParameters();
-            CalulateGLCM(true, this.normalize, this.degree, this.distance, true, this.excel);
+            //CalulateGLCM(true, this.normalize, this.degree, this.distance, true, this.excel);
             //generateHeatMap(CalulateGLCM(true, false, this.degree, this.distance, false, false));
-        }
-
-        public Bitmap CropImage(Bitmap source, Rectangle section)
-        {   
-            Bitmap bmp = new Bitmap(section.Width, section.Height);
-            Graphics g = Graphics.FromImage(bmp);
-            g.DrawImage(source, 0, 0, section, GraphicsUnit.Pixel);
-            return bmp;
         }
 
         private BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -140,38 +130,6 @@ namespace GLCM_Magic
             }
         }
 
-        private Bitmap PrepareBitmap(bool fullBitmap)
-        {
-            return fullBitmap ? new Bitmap(imagePath) : PrepareBitmap(cropPointX, cropPointY, cropLineX, cropLineY);
-        }
-
-        private Bitmap PrepareBitmap(int x, int y, int lenX, int lenY)
-        {
-            var source = new Bitmap(imagePath);
-            var section = new Rectangle(new Point(x, y), new System.Drawing.Size(lenX, lenY));
-
-            var croppedImage = CropImage(source, section);
-            return croppedImage;
-        }
-
-        private void generateHeatMap(double[,] glcmArray)
-        {
-            var heatMap = new Bitmap(256, 256);
-            IEnumerable<double> allValues = glcmArray.Cast<double>();
-            int max = Convert.ToInt32(allValues.Max());
-            int pivot = max / (colorNames.Length - 1);
-            for (int i = 0; i < glcmArray.GetLength(0); i++)
-            {
-                for (int j = 0; j < glcmArray.GetLength(1); j++)
-                {   
-                    int x = Convert.ToInt32(glcmArray[i,j] / pivot);
-                    string colorName = colorNames[x];
-                    heatMap.SetPixel(i, j, System.Drawing.Color.FromName(colorName));
-                }
-            }
-            heatMapImage.Source = BitmapToImageSource(heatMap);
-        }
-
         private double[,] CalulateGLCM(Bitmap bitmap)
         {
             using (var unmanagedImage = UnmanagedImage.FromManagedImage(bitmap))
@@ -179,16 +137,16 @@ namespace GLCM_Magic
                 var glcm = new GrayLevelCooccurrenceMatrix
                 {
                     AutoGray = false,
-                    Normalize = this.normalize,
-                    Distance = this.distance,
-                    Degree = (CooccurrenceDegree) Enum.Parse(typeof(CooccurrenceDegree), degree)
+                    Normalize = this.Normalize,
+                    Distance = this.Distance,
+                    Degree = (CooccurrenceDegree) Enum.Parse(typeof(CooccurrenceDegree), Degree)
                 };
 
                 return glcm.Compute(unmanagedImage);
             }
         }
 
-        private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool excel)
+        /*private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool excel)
         {
             var image = PrepareBitmap(fullBitmap);
             var unmanagedImage = UnmanagedImage.FromManagedImage(image);
@@ -216,7 +174,7 @@ namespace GLCM_Magic
             if (excel)
                 showResultsInExcel(results);
             return results;
-        }
+        }*/
 
         private void showResultsInExcel(double[,] results)
         {
@@ -274,12 +232,6 @@ namespace GLCM_Magic
             }
         }
 
-        private void CroppImage(object sender, RoutedEventArgs e)
-        {
-            //var matrix = CalulateGLCM(false);
-            //generateHeatMap(matrix);
-        }
-
         private void generateHeatmapsButton_Click(object sender, RoutedEventArgs e)
         {
             ReadInputParameters();
@@ -290,34 +242,46 @@ namespace GLCM_Magic
 
         private void CalculateValuesForEachPartialBitmap()
         {
-            var imgWidth = (int)imageSource.Source.Width;
-            var imgHeight = (int)imageSource.Source.Height;
-            var stepX = cropLineX;
-            var stepY = cropLineY;
-
-            EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
-
-            for (var y = 0; y < imgHeight; y += stepY)
+            using (var absentRectangleImage = (Bitmap)Bitmap.FromFile(ImagePath))
             {
-                for (var x = 0; x < imgWidth; x += stepX)
+                var imgWidth = absentRectangleImage.Width;
+                var imgHeight = absentRectangleImage.Height;
+                var stepX = CropLineX;
+                var stepY = CropLineY;
+
+                EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
+
+                for (var y = 0; y < imgHeight; y += stepY)
                 {
-                    // clamp
-                    var lenX = x + stepX;
-                    if (lenX > imgWidth)
+                    for (var x = 0; x < imgWidth; x += stepX)
                     {
-                        lenX = imgWidth;
-                    }
+                        // clamp
+                        var lenX = x + stepX;
+                        if (lenX > imgWidth)
+                        {
+                            lenX = imgWidth;
+                        }
 
-                    var lenY = y + stepY;
-                    if (lenY > imgHeight)
-                    {
-                        lenY = imgHeight;
-                    }
+                        var lenY = y + stepY;
+                        if (lenY > imgHeight)
+                        {
+                            lenY = imgHeight;
+                        }
 
-                    using (var bitmap = PrepareBitmap(x, y, lenX, lenY))
-                    {
-                        var haralick = new HaralickDescriptor(CalulateGLCM(bitmap));
-                        EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
+                        using (var currentTile = new Bitmap(lenX, lenY))
+                        {
+                            currentTile.SetResolution(absentRectangleImage.HorizontalResolution, absentRectangleImage.VerticalResolution);
+
+                            using (var currentTileGraphics = Graphics.FromImage(currentTile))
+                            {
+                                currentTileGraphics.Clear(System.Drawing.Color.Black);
+                                var absentRectangleArea = new Rectangle(x, y, lenX, lenY);
+                                currentTileGraphics.DrawImage(absentRectangleImage, 0, 0, absentRectangleArea, GraphicsUnit.Pixel);
+                            }
+
+                            var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
+                            EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
+                        }
                     }
                 }
             }
@@ -343,7 +307,6 @@ namespace GLCM_Magic
             }
             
             imageResult.Source = BitmapToImageSource(heatMap);
-            //heatMap.Save("wynik.bmp");
         }
     }
 }

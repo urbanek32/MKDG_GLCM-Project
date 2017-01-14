@@ -5,12 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GLCM_Magic"
         mc:Ignorable="d"
-        Title="GLCM-Magic" Height="551.535" Width="1119.647">
+        Title="GLCM-Magic" Height="485.535" Width="1119.647">
     <Grid Margin="0,0,2,0">
-        <Button x:Name="loadButton" Content="Load image" HorizontalAlignment="Left" Margin="8,270,0,0" VerticalAlignment="Top" Width="75" Click="loadButton_Click"/>
-        <Image x:Name="imageSource" HorizontalAlignment="Left" Height="255" Margin="10,10,0,0" VerticalAlignment="Top" Width="358" ToolTip="Source Image"/>
-        <Button x:Name="startButton" Content="Start" HorizontalAlignment="Left" Margin="213,270,0,0" VerticalAlignment="Top" Width="75" Click="startButton_Click" IsEnabled="False" RenderTransformOrigin="-0.173,0.5"/>
-        <GroupBox x:Name="groupBox" Header="Values" HorizontalAlignment="Left" Margin="10,346,0,0" VerticalAlignment="Top" Height="151" Width="291">
+        <Button x:Name="startButton" Content="Start" HorizontalAlignment="Left" Margin="482,239,0,0" VerticalAlignment="Top" Width="75" Click="startButton_Click" IsEnabled="False" RenderTransformOrigin="-0.173,0.5"/>
+        <GroupBox x:Name="groupBox" Header="Values for entire image" HorizontalAlignment="Left" Margin="10,290,0,0" VerticalAlignment="Top" Height="151" Width="291">
             <StackPanel Margin="10,0,-2,-1">
                 <Label x:Name="entropyLabel" Content="Entropy"/>
                 <Label x:Name="energyLabel" Content="Energy"/>
@@ -19,7 +17,7 @@
                 <Label x:Name="contrast" Content="Contrast"/>
             </StackPanel>
         </GroupBox>
-        <GroupBox x:Name="groupBox1" Header="Options" HorizontalAlignment="Left" Margin="322,346,0,0" VerticalAlignment="Top" Height="151" Width="304">
+        <GroupBox x:Name="groupBox1" Header="GLCM Options" HorizontalAlignment="Left" Margin="306,290,0,0" VerticalAlignment="Top" Height="151" Width="304">
             <Grid HorizontalAlignment="Left" Height="131" VerticalAlignment="Top" Width="294" Margin="0,0,-2,-2">
                 <ComboBox x:Name="degreeComboBox" HorizontalAlignment="Left" Margin="164,19,0,0" VerticalAlignment="Top" Width="120" SelectedIndex="0" IsReadOnly="True">
                     <ComboBoxItem Content="0° degrees" Tag="0"/>
@@ -34,15 +32,6 @@
                 <CheckBox x:Name="excelCheckBox" Content="Excel" HorizontalAlignment="Left" Margin="124,57,0,0" VerticalAlignment="Top" IsChecked="False"/>
             </Grid>
         </GroupBox>
-        <Button x:Name="croppButton" Content="Cropp" HorizontalAlignment="Left" Margin="293,270,0,0" VerticalAlignment="Top" Width="75" Click="CroppImage" IsEnabled="False"/>
-        <Label Content="X" HorizontalAlignment="Left" Margin="373,267,0,0" VerticalAlignment="Top"/>
-        <Label Content="Y" HorizontalAlignment="Left" Margin="442,267,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
-        <TextBox x:Name="CropPointXText" HorizontalAlignment="Left" Height="23" Margin="395,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="42"/>
-        <TextBox x:Name="CropPointYText" HorizontalAlignment="Left" Height="23" Margin="459,270,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="35" RenderTransformOrigin="1.4,0.478"/>
-        <Label Content="Step X" HorizontalAlignment="Left" Margin="373,299,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
-        <Label Content="Step Y" HorizontalAlignment="Left" Margin="459,298,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
-        <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="502,303,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="39"/>
-        <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="417,302,0,0" TextWrapping="Wrap" Text="100" VerticalAlignment="Top" Width="37" RenderTransformOrigin="0.838,0.435"/>
         <ScrollViewer HorizontalAlignment="Left" Height="487" Margin="631,10,0,0" VerticalAlignment="Top" Width="469">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -59,6 +48,21 @@
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="generateHeatmapsButton" Content="Start generating heatmaps" HorizontalAlignment="Left" Margin="213,295,0,0" VerticalAlignment="Top" Width="155" Click="generateHeatmapsButton_Click" IsEnabled="False"/>
+        <Button x:Name="generateHeatmapsButton" Content="Start generating heatmaps" HorizontalAlignment="Left" Margin="387,128,0,0" VerticalAlignment="Top" Width="239" Click="generateHeatmapsButton_Click" IsEnabled="False" Height="47"/>
+        <GroupBox x:Name="groupBox2" Header="Source Image" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="275" Width="372">
+            <Grid Margin="10,10,-2,9">
+                <Image x:Name="imageSource" HorizontalAlignment="Left" Height="207" VerticalAlignment="Top" Width="352" ToolTip="Source Image" Margin="0,27,0,0"/>
+                <Button x:Name="loadButton" Content="Load image" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Click="loadButton_Click"/>
+            </Grid>
+        </GroupBox>
+        <GroupBox x:Name="groupBox3" Header="Heatmap settings" HorizontalAlignment="Left" Margin="387,10,0,0" VerticalAlignment="Top" Height="112" Width="239">
+            <Grid Margin="0,2,-2,-1">
+                <Label Content="Step X" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" RenderTransformOrigin="-0.412,0.577"/>
+                <Label Content="Step Y" HorizontalAlignment="Left" Margin="11,41,0,0" VerticalAlignment="Top" RenderTransformOrigin="0.471,0.885"/>
+                <TextBox x:Name="CropLenYText" HorizontalAlignment="Left" Height="23" Margin="59,14,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="39" RenderTransformOrigin="0.838,0.435"/>
+                <TextBox x:Name="CropLenXText" HorizontalAlignment="Left" Height="23" Margin="59,45,0,0" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="39"/>
+            </Grid>
+        </GroupBox>
+        <ProgressBar x:Name="ProgressBar" HorizontalAlignment="Left" Height="26" Margin="387,180,0,0" VerticalAlignment="Top" Width="239"/>
     </Grid>
 </Window>
