@@ -32,8 +32,6 @@ namespace GLCM_Magic
     public partial class MainWindow : Window
     {
         private string ImagePath { get; set; }
-        private int CropPointX { get; set; }
-        private int CropPointY { get; set; }
         private int CropLineX { get; set; }
         private int CropLineY { get; set; }
         private readonly System.Drawing.Brush[] colorBrushes = {
@@ -52,9 +50,11 @@ namespace GLCM_Magic
         private bool excel { get; set; }
 
         /// <summary>
-        /// Tuple (x, y, offsetX, offsetY)
+        /// Tuple (x, y, width, height)
         /// </summary>
         private Dictionary<Tuple<int, int, int, int>, double> EntropyValues { get; set; }
+        private Dictionary<Tuple<int, int, int, int>, double> EnergyValues { get; set; }
+        private Dictionary<Tuple<int, int, int, int>, double> CorrelationValues { get; set; }
 
         public MainWindow()
         {
@@ -76,8 +76,7 @@ namespace GLCM_Magic
                 ImagePath = op.FileName;
                 if (!string.IsNullOrWhiteSpace(ImagePath))
                 {
-                    startButton.IsEnabled = true;
-                    generateHeatmapsButton.IsEnabled = true;
+                    GenerateHeatmapsButton.IsEnabled = true;
                 }
             }
         }
@@ -93,25 +92,8 @@ namespace GLCM_Magic
             if (excelCheckBox.IsChecked.HasValue)
                 excel = excelCheckBox.IsChecked.Value;
             this.Distance = int.Parse(distanceTextBox.Text);
-            //this.CropPointX = int.Parse(CropPointXText.Text);
-            //this.CropPointY = int.Parse(CropPointYText.Text);
             this.CropLineX = int.Parse(CropLenXText.Text);
             this.CropLineY = int.Parse(CropLenYText.Text);
-        }
-
-        private void startButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(ImagePath))
-            {
-                Debug.WriteLine("ImagePath is empty");
-                return;
-            }
-            
-            if (normalizeCheckBox.IsChecked != null) 
-                Normalize = normalizeCheckBox.IsChecked.Value;
-            ReadInputParameters();
-            //CalulateGLCM(true, this.normalize, this.degree, this.distance, true, this.excel);
-            //generateHeatMap(CalulateGLCM(true, false, this.degree, this.distance, false, false));
         }
 
         private BitmapImage BitmapToImageSource(Bitmap bitmap)
@@ -236,8 +218,9 @@ namespace GLCM_Magic
         {
             ReadInputParameters();
             CalculateValuesForEachPartialBitmap();
-            GenerateHeatmapEntropy();
-            // TODO: Add other heatmaps
+            GenerateHeatmap(EntropyValues, EntropyImageResult);
+            GenerateHeatmap(EnergyValues, EnergyImageResult);
+            GenerateHeatmap(CorrelationValues, CorrelationImageResult);
         }
 
         private void CalculateValuesForEachPartialBitmap()
@@ -250,6 +233,8 @@ namespace GLCM_Magic
                 var stepY = CropLineY;
 
                 EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                EnergyValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                CorrelationValues = new Dictionary<Tuple<int, int, int, int>, double>();
 
                 for (var y = 0; y < imgHeight; y += stepY)
                 {
@@ -281,32 +266,34 @@ namespace GLCM_Magic
 
                             var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
                             EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
+                            EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
+                            CorrelationValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Correlation);
                         }
                     }
                 }
             }
         }
 
-        private void GenerateHeatmapEntropy()
+        private void GenerateHeatmap(Dictionary<Tuple<int, int, int, int>, double> dict, System.Windows.Controls.Image imageControl)
         {
             var imgWidth = (int)imageSource.Source.Width;
             var imgHeight = (int)imageSource.Source.Height;
             var heatMap = new Bitmap(imgWidth, imgHeight);
 
-            var entropyValues = EntropyValues.Values.Cast<double>();
+            var entropyValues = dict.Values.Cast<double>();
             var maxValue = entropyValues.Max();
             var pivot = maxValue / (colorBrushes.Length - 1);
 
             using (var gr = Graphics.FromImage(heatMap))
             {
-                foreach (var entropyValue in EntropyValues)
+                foreach (var entropyValue in dict)
                 {
                     var brushIndex = Convert.ToInt32(entropyValue.Value / pivot);
                     gr.FillRectangle(colorBrushes[brushIndex], entropyValue.Key.Item1, entropyValue.Key.Item2, entropyValue.Key.Item3, entropyValue.Key.Item4);
                 }
             }
-            
-            imageResult.Source = BitmapToImageSource(heatMap);
+
+            imageControl.Source = BitmapToImageSource(heatMap);
         }
     }
 }
