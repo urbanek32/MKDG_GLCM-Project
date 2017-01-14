@@ -40,7 +40,7 @@ namespace GLCM_Magic
         private int CropLineX { get; set; }
         private int CropLineY { get; set; }
         private readonly System.Drawing.Brush[] colorBrushes = {
-            System.Drawing.Brushes.White,
+            System.Drawing.Brushes.LightGreen,
             System.Drawing.Brushes.Green,
             System.Drawing.Brushes.GreenYellow,
             System.Drawing.Brushes.Yellow,
@@ -155,35 +155,17 @@ namespace GLCM_Magic
             }
         }
 
-        /*private double[,] CalulateGLCM(bool fullBitmap, bool normalize, string degree, int distance, bool updateMetrics, bool ExportToExcel)
+        private void UpdateMetrics(HaralickDescriptor haralick)
         {
-            var image = PrepareBitmap(fullBitmap);
-            var unmanagedImage = UnmanagedImage.FromManagedImage(image);
-
-            var glcm = new GrayLevelCooccurrenceMatrix
+            InvokeAction(() =>
             {
-                AutoGray = false,
-                Normalize = normalize,
-                Distance = distance,
-                Degree = (CooccurrenceDegree)Enum.Parse(typeof(CooccurrenceDegree), degree)
-            };
-
-            var results = glcm.Compute(unmanagedImage);
-
-            if (updateMetrics)
-            {
-                var haralick = new HaralickDescriptor(results);
                 entropyLabel.Content = string.Format("Entropy: {0}", haralick.Entropy.ToString("N"));
                 energyLabel.Content = string.Format("Energy: {0}", haralick.AngularSecondMomentum.ToString("N5"));
                 correlationLabel.Content = string.Format("Correlation: {0}", haralick.Correlation.ToString("N"));
                 invDiffMomentLabel.Content = string.Format("Inv Diff Moment: {0}", haralick.InverseDifferenceMoment.ToString("N"));
                 contrast.Content = string.Format("Contrast: {0}", haralick.Contrast.ToString("N"));
-            }
-
-            if (ExportToExcel)
-                showResultsInExcel(results);
-            return results;
-        }*/
+            });
+        }
 
         private void showResultsInExcel(double[,] results)
         {
@@ -274,20 +256,18 @@ namespace GLCM_Magic
 
         private void OnGlcmBackgroundDoWork(object sender, DoWorkEventArgs e)
         {
-            /*Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+            using (var sourceBitmap = (Bitmap)Bitmap.FromFile(SourceImagePath))
             {
-                GenerateHeatmapsButton.IsEnabled = false;
-            }));*/
-
-            using (var absentRectangleImage = (Bitmap)Bitmap.FromFile(SourceImagePath))
-            {
-                var imgWidth = absentRectangleImage.Width;
-                var imgHeight = absentRectangleImage.Height;
+                var imgWidth = sourceBitmap.Width;
+                var imgHeight = sourceBitmap.Height;
                 var stepX = CropLineX;
                 var stepY = CropLineY;
 
                 var iterations = Math.Ceiling((float)imgWidth / stepX) * Math.Ceiling((float)imgHeight / stepY);
                 var iterationCounter = 1;
+
+                // Calculate GLCM for entire image
+                UpdateMetrics(new HaralickDescriptor(CalulateGLCM(sourceBitmap)));
 
                 EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
                 EnergyValues = new Dictionary<Tuple<int, int, int, int>, double>();
@@ -312,13 +292,13 @@ namespace GLCM_Magic
 
                         using (var currentTile = new Bitmap(lenX, lenY))
                         {
-                            currentTile.SetResolution(absentRectangleImage.HorizontalResolution, absentRectangleImage.VerticalResolution);
+                            currentTile.SetResolution(sourceBitmap.HorizontalResolution, sourceBitmap.VerticalResolution);
 
                             using (var currentTileGraphics = Graphics.FromImage(currentTile))
                             {
                                 currentTileGraphics.Clear(System.Drawing.Color.Black);
                                 var absentRectangleArea = new Rectangle(x, y, lenX, lenY);
-                                currentTileGraphics.DrawImage(absentRectangleImage, 0, 0, absentRectangleArea, GraphicsUnit.Pixel);
+                                currentTileGraphics.DrawImage(sourceBitmap, 0, 0, absentRectangleArea, GraphicsUnit.Pixel);
                             }
 
                             var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
