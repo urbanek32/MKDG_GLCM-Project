@@ -63,6 +63,8 @@ namespace GLCM_Magic
         private Dictionary<Tuple<int, int, int, int>, double> EntropyValues { get; set; }
         private Dictionary<Tuple<int, int, int, int>, double> EnergyValues { get; set; }
         private Dictionary<Tuple<int, int, int, int>, double> CorrelationValues { get; set; }
+        private Dictionary<Tuple<int, int, int, int>, double> InvDiffMomentValues { get; set; }
+        private Dictionary<Tuple<int, int, int, int>, double> ContrastValues { get; set; }
 
         public MainWindow()
         {
@@ -272,6 +274,8 @@ namespace GLCM_Magic
                 EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
                 EnergyValues = new Dictionary<Tuple<int, int, int, int>, double>();
                 CorrelationValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                InvDiffMomentValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                ContrastValues = new Dictionary<Tuple<int, int, int, int>, double>();
 
                 for (var y = 0; y < imgHeight; y += stepY)
                 {
@@ -305,6 +309,8 @@ namespace GLCM_Magic
                             EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
                             EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
                             CorrelationValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Correlation);
+                            InvDiffMomentValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.InverseDifferenceMoment);
+                            ContrastValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Contrast);
                         }
                         
                         _glcmBackgroundWorker.ReportProgress((int)(100 / (iterations) * iterationCounter++));
@@ -345,20 +351,34 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Entropy heatmap...";
             });
             GenerateHeatmap(EntropyValues, EntropyImageResult);
-            _heatmapsBackgroundWorker.ReportProgress(33);
+            _heatmapsBackgroundWorker.ReportProgress(20);
 
             InvokeAction(() =>
             {
                 StatusTextBlock.Text = "Generating Energy heatmap...";
             });
             GenerateHeatmap(EnergyValues, EnergyImageResult);
-            _heatmapsBackgroundWorker.ReportProgress(66);
+            _heatmapsBackgroundWorker.ReportProgress(40);
 
             InvokeAction(() =>
             {
                 StatusTextBlock.Text = "Generating Correlation heatmap...";
             });
             GenerateHeatmap(CorrelationValues, CorrelationImageResult);
+            _heatmapsBackgroundWorker.ReportProgress(60);
+
+            InvokeAction(() =>
+            {
+                StatusTextBlock.Text = "Generating Inv Dif fMoment heatmap...";
+            });
+            GenerateHeatmap(InvDiffMomentValues, InvDiffMomentImageResult);
+            _heatmapsBackgroundWorker.ReportProgress(80);
+
+            InvokeAction(() =>
+            {
+                StatusTextBlock.Text = "Generating Contrast heatmap...";
+            });
+            GenerateHeatmap(ContrastValues, ContrastImageResult);
             _heatmapsBackgroundWorker.ReportProgress(100);
         }
 

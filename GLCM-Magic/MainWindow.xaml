@@ -36,17 +36,27 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                     <TextBlock Text="Entropy Heatmap" VerticalAlignment="Center"/>
                     <Separator Margin="0" Width="100" Visibility="Hidden"/>
-                    <Image x:Name="EntropyImageResult" ToolTip="Entropy Image" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
+                    <Image x:Name="EntropyImageResult" ToolTip="Entropy Heatmap" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                     <TextBlock Text="Energy Heatmap" VerticalAlignment="Center"/>
                     <Separator Margin="0" Width="100" Visibility="Hidden"/>
-                    <Image x:Name="EnergyImageResult" ToolTip="Energy Image" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
+                    <Image x:Name="EnergyImageResult" ToolTip="Energy Heatmap" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                     <TextBlock Text="Correlation Heatmap" VerticalAlignment="Center"/>
                     <Separator Margin="0" Width="75" Visibility="Hidden"/>
-                    <Image x:Name="CorrelationImageResult" ToolTip="Correlation Image" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
+                    <Image x:Name="CorrelationImageResult" ToolTip="Correlation Heatmap" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
+                    <TextBlock Text="Inverse Difference Moment Heatmap" VerticalAlignment="Center"/>
+                    <Separator Margin="0" Width="75" Visibility="Hidden"/>
+                    <Image x:Name="InvDiffMomentImageResult" ToolTip="Inverse Difference Moment Heatmap" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
+                    <TextBlock Text="Contrast Heatmap" VerticalAlignment="Center"/>
+                    <Separator Margin="0" Width="75" Visibility="Hidden"/>
+                    <Image x:Name="ContrastImageResult" ToolTip="Contrast Heatmap" VerticalAlignment="Top" Height="256" Stretch="Fill"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
