@@ -169,7 +169,7 @@ namespace GLCM_Magic
             });
         }
 
-        private void showResultsInExcel(double[,] results)
+        private void showGlcmInExcel(double [,]glcm)
         {
             Excel.Application oXL;
             Excel._Workbook oWB;
@@ -183,7 +183,7 @@ namespace GLCM_Magic
                 oWB = (Excel._Workbook)(oXL.Workbooks.Add(Missing.Value));
                 oSheet = (Excel._Worksheet)oWB.ActiveSheet;
 
-                for (int i = 1; i < results.GetLength(0)+1; i++)
+                for (int i = 1; i < glcm.GetLength(0) + 1; i++)
                 {
                     oSheet.Cells[1, i] = i;
                     oSheet.Cells[i, 1] = i;
@@ -198,11 +198,11 @@ namespace GLCM_Magic
                 // Create an array to multiple values at once.
                 string[,] excelValues = new string[256, 256];
 
-                for (int i = 0; i < results.GetLength(0); i++)
+                for (int i = 0; i < glcm.GetLength(0); i++)
                 {
-                    for (int j = 0; j < results.GetLength(0); j++)
+                    for (int j = 0; j < glcm.GetLength(0); j++)
                     {
-                        excelValues[i, j] = results[i, j].ToString(); //TODO: Some prettier float formatting
+                        excelValues[i, j] = glcm[i, j].ToString(); //TODO: Some prettier float formatting
                     }
                 }
 
@@ -231,6 +231,10 @@ namespace GLCM_Magic
             GenerateHeatmapsButton.IsEnabled = false;
             StatusTextBlock.Text = "Calculating GLCM matrix...";
             _glcmBackgroundWorker.RunWorkerAsync();
+            if (ExportToExcel)
+            {
+                showGlcmInExcel(CalulateGLCM((Bitmap)Bitmap.FromFile(SourceImagePath)));
+            }
         }
 
         private void GenerateHeatmap(Dictionary<Tuple<int, int, int, int>, double> dict, System.Windows.Controls.Image imageControl)
@@ -333,7 +337,7 @@ namespace GLCM_Magic
             }
             else if (e.Error != null)
             {
-                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
@@ -402,7 +406,7 @@ namespace GLCM_Magic
             }
             else if (e.Error != null)
             {
-                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
