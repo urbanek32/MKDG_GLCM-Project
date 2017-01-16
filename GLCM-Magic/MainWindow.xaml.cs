@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -40,14 +41,14 @@ namespace GLCM_Magic
         private int CropLineX { get; set; }
         private int CropLineY { get; set; }
         private readonly System.Drawing.Brush[] colorBrushes = {
-            System.Drawing.Brushes.LightGreen,
+            System.Drawing.Brushes.Blue,
+            System.Drawing.Brushes.LightSkyBlue,
             System.Drawing.Brushes.Green,
             System.Drawing.Brushes.GreenYellow,
+            System.Drawing.Brushes.Khaki,
             System.Drawing.Brushes.Yellow,
             System.Drawing.Brushes.Orange,
-            System.Drawing.Brushes.OrangeRed,
-            System.Drawing.Brushes.Red,
-            System.Drawing.Brushes.DarkRed
+            System.Drawing.Brushes.OrangeRed
         };
         private string Degree { get; set; }
         private int Distance { get; set; }
@@ -60,11 +61,11 @@ namespace GLCM_Magic
         /// <summary>
         /// Tuple (x, y, width, height)
         /// </summary>
-        private Dictionary<Tuple<int, int, int, int>, double> EntropyValues { get; set; }
-        private Dictionary<Tuple<int, int, int, int>, double> EnergyValues { get; set; }
-        private Dictionary<Tuple<int, int, int, int>, double> CorrelationValues { get; set; }
-        private Dictionary<Tuple<int, int, int, int>, double> InvDiffMomentValues { get; set; }
-        private Dictionary<Tuple<int, int, int, int>, double> ContrastValues { get; set; }
+        private OrderedDictionary EntropyValues { get; set; }
+        private OrderedDictionary EnergyValues { get; set; }
+        private OrderedDictionary CorrelationValues { get; set; }
+        private OrderedDictionary InvDiffMomentValues { get; set; }
+        private OrderedDictionary ContrastValues { get; set; }
 
         public MainWindow()
         {
@@ -98,10 +99,11 @@ namespace GLCM_Magic
 
             if (op.ShowDialog() == true)
             {
-                imageSource.Source = new BitmapImage(new Uri(op.FileName));
+                var image = new BitmapImage(new Uri(op.FileName));
+                imageSource.Source = image;
                 SourceImagePath = op.FileName;
-                SourceImageHeight = imageSource.Source.Height;
-                SourceImageWidth = imageSource.Source.Width;
+                SourceImageHeight = image.PixelHeight;
+                SourceImageWidth = image.PixelWidth;
                 if (!string.IsNullOrWhiteSpace(SourceImagePath))
                 {
                     GenerateHeatmapsButton.IsEnabled = true;
@@ -238,7 +240,7 @@ namespace GLCM_Magic
             }
         }
 
-        private void GenerateHeatmap(Dictionary<Tuple<int, int, int, int>, double> dict, System.Windows.Controls.Image imageControl)
+        private void GenerateHeatmap(OrderedDictionary dict, System.Windows.Controls.Image imageControl)
         {
             var heatMap = new Bitmap((int)SourceImageWidth, (int)SourceImageHeight);
 
@@ -248,11 +250,20 @@ namespace GLCM_Magic
 
             using (var gr = Graphics.FromImage(heatMap))
             {
-                foreach (var entropyValue in dict)
+                var enumerator = dict.GetEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    var brushIndex = Convert.ToInt32(entropyValue.Value / pivot);
-                    gr.FillRectangle(colorBrushes[brushIndex], entropyValue.Key.Item1, entropyValue.Key.Item2, entropyValue.Key.Item3, entropyValue.Key.Item4);
+                    var enumKey = enumerator.Key as Tuple<int, int, int, int>;
+                    var enumValue = enumerator.Value as double?;
+                    var brushIndex = Convert.ToInt32(enumValue / pivot);
+                    gr.FillRectangle(colorBrushes[brushIndex], enumKey.Item1, enumKey.Item2, enumKey.Item3, enumKey.Item4);
                 }
+                /*foreach (var value in dict)
+                {
+                    var tupleValue = value as Tuple<int, int, int, int>;
+                    var brushIndex = Convert.ToInt32(tupleValue.Value / pivot);
+                    gr.FillRectangle(colorBrushes[brushIndex], tupleValue.Item1, tupleValue.Item2, tupleValue.Item3, tupleValue.Item4);
+                }*/
             }
 
             InvokeAction(() =>
@@ -276,11 +287,12 @@ namespace GLCM_Magic
                 // Calculate GLCM for entire image
                 UpdateMetrics(new HaralickDescriptor(CalulateGLCM(sourceBitmap)));
 
-                EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
-                EnergyValues = new Dictionary<Tuple<int, int, int, int>, double>();
-                CorrelationValues = new Dictionary<Tuple<int, int, int, int>, double>();
-                InvDiffMomentValues = new Dictionary<Tuple<int, int, int, int>, double>();
-                ContrastValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                //EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
+                EntropyValues = new OrderedDictionary();
+                EnergyValues = new OrderedDictionary();
+                CorrelationValues = new OrderedDictionary();
+                InvDiffMomentValues = new OrderedDictionary();
+                ContrastValues = new OrderedDictionary();
 
                 for (var y = 0; y < imgHeight; y += stepY)
                 {
@@ -299,7 +311,7 @@ namespace GLCM_Magic
                             lenY = imgHeight;
                         }
 
-                        using (var currentTile = new Bitmap(lenX, lenY))
+                        using (var currentTile = new Bitmap(stepX, stepY))
                         {
                             currentTile.SetResolution(sourceBitmap.HorizontalResolution, sourceBitmap.VerticalResolution);
 
@@ -308,14 +320,18 @@ namespace GLCM_Magic
                                 currentTileGraphics.Clear(System.Drawing.Color.Black);
                                 var absentRectangleArea = new Rectangle(x, y, lenX, lenY);
                                 currentTileGraphics.DrawImage(sourceBitmap, 0, 0, absentRectangleArea, GraphicsUnit.Pixel);
-                            }
+                            
 
-                            var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
-                            EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
-                            EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
-                            CorrelationValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Correlation);
-                            InvDiffMomentValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.InverseDifferenceMoment);
-                            ContrastValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Contrast);
+                            //using (var currentTile2 = sourceBitmap.Clone(new Rectangle(x, y, stepX, stepY), sourceBitmap.PixelFormat))
+                            //{
+                                var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
+                                EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
+                                EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
+                                CorrelationValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Correlation);
+                                InvDiffMomentValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.InverseDifferenceMoment);
+                                ContrastValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Contrast);
+                            }
+                                
                         }
                         
                         _glcmBackgroundWorker.ReportProgress((int)(100 / (iterations) * iterationCounter++));
@@ -338,7 +354,7 @@ namespace GLCM_Magic
             }
             else if (e.Error != null)
             {
-                MessageBox.Show("BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
@@ -358,13 +374,13 @@ namespace GLCM_Magic
             GenerateHeatmap(EntropyValues, EntropyImageResult);
             
             _heatmapsBackgroundWorker.ReportProgress(20);
-            metricsToDouble(EntropyValues, "Entropy", ExportToExcel);
+            //metricsToDouble(EntropyValues, "Entropy", ExportToExcel);
             InvokeAction(() =>
             {
                 StatusTextBlock.Text = "Generating Energy heatmap...";
             });
             GenerateHeatmap(EnergyValues, EnergyImageResult);
-            metricsToDouble(EnergyValues, "Energy", ExportToExcel);
+            //metricsToDouble(EnergyValues, "Energy", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(40);
 
             InvokeAction(() =>
@@ -372,7 +388,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Correlation heatmap...";
             });
             GenerateHeatmap(CorrelationValues, CorrelationImageResult);
-            metricsToDouble(CorrelationValues, "Correlation", ExportToExcel);
+            //metricsToDouble(CorrelationValues, "Correlation", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(60);
 
             InvokeAction(() =>
@@ -380,7 +396,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Inv Dif fMoment heatmap...";
             });
             GenerateHeatmap(InvDiffMomentValues, InvDiffMomentImageResult);
-            metricsToDouble(InvDiffMomentValues, "InvDiffMoment", ExportToExcel);
+            //metricsToDouble(InvDiffMomentValues, "InvDiffMoment", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(80);
 
             InvokeAction(() =>
@@ -388,7 +404,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Contrast heatmap...";
             });
             GenerateHeatmap(ContrastValues, ContrastImageResult);
-            metricsToDouble(ContrastValues, "Contrast", ExportToExcel);
+            //metricsToDouble(ContrastValues, "Contrast", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(100);
         }
 
