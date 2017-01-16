@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -258,12 +259,6 @@ namespace GLCM_Magic
                     var brushIndex = Convert.ToInt32(enumValue / pivot);
                     gr.FillRectangle(colorBrushes[brushIndex], enumKey.Item1, enumKey.Item2, enumKey.Item3, enumKey.Item4);
                 }
-                /*foreach (var value in dict)
-                {
-                    var tupleValue = value as Tuple<int, int, int, int>;
-                    var brushIndex = Convert.ToInt32(tupleValue.Value / pivot);
-                    gr.FillRectangle(colorBrushes[brushIndex], tupleValue.Item1, tupleValue.Item2, tupleValue.Item3, tupleValue.Item4);
-                }*/
             }
 
             InvokeAction(() =>
@@ -274,7 +269,7 @@ namespace GLCM_Magic
 
         private void OnGlcmBackgroundDoWork(object sender, DoWorkEventArgs e)
         {
-            using (var sourceBitmap = (Bitmap)Bitmap.FromFile(SourceImagePath))
+            using (var sourceBitmap = MakeGrayscale3((Bitmap)Bitmap.FromFile(SourceImagePath)))
             {
                 var imgWidth = sourceBitmap.Width;
                 var imgHeight = sourceBitmap.Height;
@@ -287,7 +282,6 @@ namespace GLCM_Magic
                 // Calculate GLCM for entire image
                 UpdateMetrics(new HaralickDescriptor(CalulateGLCM(sourceBitmap)));
 
-                //EntropyValues = new Dictionary<Tuple<int, int, int, int>, double>();
                 EntropyValues = new OrderedDictionary();
                 EnergyValues = new OrderedDictionary();
                 CorrelationValues = new OrderedDictionary();
@@ -320,10 +314,7 @@ namespace GLCM_Magic
                                 currentTileGraphics.Clear(System.Drawing.Color.Black);
                                 var absentRectangleArea = new Rectangle(x, y, lenX, lenY);
                                 currentTileGraphics.DrawImage(sourceBitmap, 0, 0, absentRectangleArea, GraphicsUnit.Pixel);
-                            
 
-                            //using (var currentTile2 = sourceBitmap.Clone(new Rectangle(x, y, stepX, stepY), sourceBitmap.PixelFormat))
-                            //{
                                 var haralick = new HaralickDescriptor(CalulateGLCM(currentTile));
                                 EntropyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Entropy);
                                 EnergyValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.AngularSecondMomentum);
@@ -331,9 +322,8 @@ namespace GLCM_Magic
                                 InvDiffMomentValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.InverseDifferenceMoment);
                                 ContrastValues.Add(new Tuple<int, int, int, int>(x, y, lenX, lenY), haralick.Contrast);
                             }
-                                
                         }
-                        
+
                         _glcmBackgroundWorker.ReportProgress((int)(100 / (iterations) * iterationCounter++));
                     }
                 }
@@ -486,6 +476,40 @@ namespace GLCM_Magic
             {
                 throw new InvalidOperationException("The given jagged array is not rectangular.");
             }
+        }
+
+        public static Bitmap MakeGrayscale3(Bitmap original)
+        {
+            //create a blank bitmap the same size as original
+            var newBitmap = new Bitmap(original.Width, original.Height);
+
+            //get a graphics object from the new image
+            var g = Graphics.FromImage(newBitmap);
+
+            //create the grayscale ColorMatrix
+            var colorMatrix = new ColorMatrix(
+               new[]
+               {
+                 new float[] {.3f, .3f, .3f, 0, 0},
+                 new float[] {.59f, .59f, .59f, 0, 0},
+                 new float[] {.11f, .11f, .11f, 0, 0},
+                 new float[] {0, 0, 0, 1, 0},
+                 new float[] {0, 0, 0, 0, 1}
+               });
+
+            //create some image attributes
+            var attributes = new ImageAttributes();
+
+            //set the color matrix attribute
+            attributes.SetColorMatrix(colorMatrix);
+
+            //draw the original image on the new image
+            //using the grayscale color matrix
+            g.DrawImage(original, new Rectangle(0, 0, original.Width, original.Height), 0, 0, original.Width, original.Height, GraphicsUnit.Pixel, attributes);
+
+            //dispose the Graphics object
+            g.Dispose();
+            return newBitmap;
         }
     }
 }
