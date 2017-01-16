@@ -169,7 +169,7 @@ namespace GLCM_Magic
             });
         }
 
-        private void showGlcmInExcel(double [,]glcm)
+        private void showGlcmInExcel(double [,]glcm, string sheetName)
         {
             Excel.Application oXL;
             Excel._Workbook oWB;
@@ -182,6 +182,7 @@ namespace GLCM_Magic
 
                 oWB = (Excel._Workbook)(oXL.Workbooks.Add(Missing.Value));
                 oSheet = (Excel._Worksheet)oWB.ActiveSheet;
+                oSheet.Name = sheetName;
 
                 for (int i = 1; i < glcm.GetLength(0) + 1; i++)
                 {
@@ -202,7 +203,7 @@ namespace GLCM_Magic
                 {
                     for (int j = 0; j < glcm.GetLength(0); j++)
                     {
-                        excelValues[i, j] = glcm[i, j].ToString(); //TODO: Some prettier float formatting
+                        excelValues[i, j] = glcm[i,j].ToString(); //TODO: Some prettier float formatting
                     }
                 }
 
@@ -233,7 +234,7 @@ namespace GLCM_Magic
             _glcmBackgroundWorker.RunWorkerAsync();
             if (ExportToExcel)
             {
-                showGlcmInExcel(CalulateGLCM((Bitmap)Bitmap.FromFile(SourceImagePath)));
+                showGlcmInExcel(CalulateGLCM((Bitmap)Bitmap.FromFile(SourceImagePath)),"GLCM");
             }
         }
 
@@ -355,13 +356,15 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Entropy heatmap...";
             });
             GenerateHeatmap(EntropyValues, EntropyImageResult);
+            
             _heatmapsBackgroundWorker.ReportProgress(20);
-
+            metricsToDouble(EntropyValues, "Entropy", ExportToExcel);
             InvokeAction(() =>
             {
                 StatusTextBlock.Text = "Generating Energy heatmap...";
             });
             GenerateHeatmap(EnergyValues, EnergyImageResult);
+            metricsToDouble(EnergyValues, "Energy", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(40);
 
             InvokeAction(() =>
@@ -369,6 +372,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Correlation heatmap...";
             });
             GenerateHeatmap(CorrelationValues, CorrelationImageResult);
+            metricsToDouble(CorrelationValues, "Correlation", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(60);
 
             InvokeAction(() =>
@@ -376,6 +380,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Inv Dif fMoment heatmap...";
             });
             GenerateHeatmap(InvDiffMomentValues, InvDiffMomentImageResult);
+            metricsToDouble(InvDiffMomentValues, "InvDiffMoment", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(80);
 
             InvokeAction(() =>
@@ -383,6 +388,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Contrast heatmap...";
             });
             GenerateHeatmap(ContrastValues, ContrastImageResult);
+            metricsToDouble(ContrastValues, "Contrast", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(100);
         }
 
@@ -412,7 +418,6 @@ namespace GLCM_Magic
             {
                 StatusTextBlock.Text = "Heatmaps are ready";
             }
-
             ResetBackgroundWorker();
         }
 
@@ -420,6 +425,51 @@ namespace GLCM_Magic
         {
             ProgressBar.Value = 0;
             GenerateHeatmapsButton.IsEnabled = true;
+        }
+
+        private void metricsToDouble(Dictionary<Tuple<int, int, int, int>, double> dict, string metricName, bool export)
+        {
+            if (!export) 
+                return;
+            int len = Convert.ToInt32(Math.Sqrt(dict.Count()));
+            int i =0, j = 0, c = 0;
+            double[][] metricsArray = new double[len][];
+            for (int k = 0; k < len; k++)
+            {
+                metricsArray[k] = new double[len];
+            }
+            foreach (var dictValue in dict)
+            {
+                if (j == len) { i++; j=0; }
+                metricsArray[i][j] = dictValue.Value;
+                j++;
+                c++;
+                if (c == len * len)
+                {
+                    break;
+                }
+            }
+            showGlcmInExcel(To2D(metricsArray), metricName);
+        }
+
+        static T[,] To2D<T>(T[][] source)
+        {
+            try
+            {
+                int FirstDim = source.Length;
+                int SecondDim = source.GroupBy(row => row.Length).Single().Key; // throws InvalidOperationException if source is not rectangular
+
+                var result = new T[FirstDim, SecondDim];
+                for (int i = 0; i < FirstDim; ++i)
+                    for (int j = 0; j < SecondDim; ++j)
+                        result[i, j] = source[i][j];
+
+                return result;
+            }
+            catch (InvalidOperationException)
+            {
+                throw new InvalidOperationException("The given jagged array is not rectangular.");
+            }
         }
     }
 }
