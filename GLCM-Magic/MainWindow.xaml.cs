@@ -28,6 +28,7 @@ using System.IO;
 using System.Threading;
 using System.Windows.Threading;
 using Pen = System.Drawing.Pen;
+using System.Collections;
 
 namespace GLCM_Magic
 {
@@ -178,6 +179,7 @@ namespace GLCM_Magic
             Excel._Workbook oWB;
             Excel._Worksheet oSheet;
             Excel.Range oRng;
+            string len = (glcm.GetLength(0) + 1).ToString();
             try
             {
                 oXL = new Excel.Application();
@@ -196,23 +198,23 @@ namespace GLCM_Magic
                 //bold, vertical alignment = center.
                 oSheet.get_Range("A1", "IV1").Font.Bold = true;
                 oSheet.get_Range("A1", "IV1").VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
-                oSheet.get_Range("A1", "A256").Font.Bold = true;
-                oSheet.get_Range("A1", "A256").VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+                oSheet.get_Range("A1", "A" + len).Font.Bold = true;
+                oSheet.get_Range("A1", "A" + len).VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
 
                 // Create an array to multiple values at once.
-                string[,] excelValues = new string[256, 256];
+                double[,] excelValues = new double[glcm.GetLength(0), glcm.GetLength(0)];
 
                 for (int i = 0; i < glcm.GetLength(0); i++)
                 {
                     for (int j = 0; j < glcm.GetLength(0); j++)
                     {
-                        excelValues[i, j] = glcm[i,j].ToString(); //TODO: Some prettier float formatting
+                        excelValues[i, j] = glcm[i, j]; //TODO: Some prettier float formatting
                     }
                 }
 
-                oSheet.get_Range("B2", "IV256").Value2 = excelValues;
+                oSheet.get_Range("B2", "IV" + len).Value2 = excelValues;
 
-                oRng = oSheet.get_Range("B2", "IV256");
+                oRng = oSheet.get_Range("B2", "IV" + len);
                 oRng.EntireColumn.AutoFit();
 
                 oXL.Visible = true;
@@ -344,7 +346,7 @@ namespace GLCM_Magic
             }
             else if (e.Error != null)
             {
-                MessageBox.Show($"BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("BackgroundWorker operation failed: \n{e.Error}", "Operation Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
@@ -364,13 +366,13 @@ namespace GLCM_Magic
             GenerateHeatmap(EntropyValues, EntropyImageResult);
             
             _heatmapsBackgroundWorker.ReportProgress(20);
-            //metricsToDouble(EntropyValues, "Entropy", ExportToExcel);
+            metricsToDouble(EntropyValues, "Entropy", ExportToExcel);
             InvokeAction(() =>
             {
                 StatusTextBlock.Text = "Generating Energy heatmap...";
             });
             GenerateHeatmap(EnergyValues, EnergyImageResult);
-            //metricsToDouble(EnergyValues, "Energy", ExportToExcel);
+            metricsToDouble(EnergyValues, "Energy", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(40);
 
             InvokeAction(() =>
@@ -378,7 +380,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Correlation heatmap...";
             });
             GenerateHeatmap(CorrelationValues, CorrelationImageResult);
-            //metricsToDouble(CorrelationValues, "Correlation", ExportToExcel);
+            metricsToDouble(CorrelationValues, "Correlation", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(60);
 
             InvokeAction(() =>
@@ -386,7 +388,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Inv Dif fMoment heatmap...";
             });
             GenerateHeatmap(InvDiffMomentValues, InvDiffMomentImageResult);
-            //metricsToDouble(InvDiffMomentValues, "InvDiffMoment", ExportToExcel);
+            metricsToDouble(InvDiffMomentValues, "InvDiffMoment", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(80);
 
             InvokeAction(() =>
@@ -394,7 +396,7 @@ namespace GLCM_Magic
                 StatusTextBlock.Text = "Generating Contrast heatmap...";
             });
             GenerateHeatmap(ContrastValues, ContrastImageResult);
-            //metricsToDouble(ContrastValues, "Contrast", ExportToExcel);
+            metricsToDouble(ContrastValues, "Contrast", ExportToExcel);
             _heatmapsBackgroundWorker.ReportProgress(100);
         }
 
@@ -433,21 +435,21 @@ namespace GLCM_Magic
             GenerateHeatmapsButton.IsEnabled = true;
         }
 
-        private void metricsToDouble(Dictionary<Tuple<int, int, int, int>, double> dict, string metricName, bool export)
+        private void metricsToDouble(OrderedDictionary dict, string metricName, bool export)
         {
             if (!export) 
                 return;
-            int len = Convert.ToInt32(Math.Sqrt(dict.Count()));
+            int len = Convert.ToInt32(Math.Sqrt(dict.Count));
             int i =0, j = 0, c = 0;
             double[][] metricsArray = new double[len][];
             for (int k = 0; k < len; k++)
             {
                 metricsArray[k] = new double[len];
             }
-            foreach (var dictValue in dict)
+            foreach (DictionaryEntry de in dict)
             {
                 if (j == len) { i++; j=0; }
-                metricsArray[i][j] = dictValue.Value;
+                metricsArray[i][j] = Convert.ToDouble(de.Value);
                 j++;
                 c++;
                 if (c == len * len)
